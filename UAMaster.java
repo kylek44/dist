@@ -60,11 +60,16 @@ public class UAMaster {
 			
 			while ((line = usermapIn.readLine()) != null) {
 				tokens = line.split(" ");
-				userToFiles.put(tokens[0], new ArrayList<>());
-				for (int i = 1; i < tokens.length; i++) {
-					userToFiles.get(tokens[0]).add(tokens[i]);
-					fileToUser.put(tokens[1], tokens[0]);
+				if (!userToFiles.containsKey(tokens[0])) {
+                    userToFiles.put(tokens[0], new ArrayList<>());
 				}
+				
+				userToFiles.get(tokens[0]).add(tokens[1]);
+                fileToUser.put(tokens[1], tokens[0]);
+// 				for (int i = 1; i < tokens.length; i++) {
+// 					userToFiles.get(tokens[0]).add(tokens[1]);
+// 					fileToUser.put(tokens[1], tokens[0]);
+// 				}
 			}
 		} catch(IOException e) {
 			e.printStackTrace();

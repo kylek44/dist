@@ -34,6 +34,7 @@ public class UAClientConnection implements Runnable {
 		
 		if (userToFiles.containsKey(username)) {
 			List<String> files = userToFiles.get(username);
+			System.out.println(files);
 			byte[] data = new byte[2048];
 			int pos = 0;
 			System.out.println("WAY before flushing turdwords");
