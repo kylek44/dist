@@ -29,15 +29,14 @@ public class UAClientConnection implements Runnable {
 		this.userToFiles = userToFiles;
 	}
 	
-	public void getAllFiles(byte[] bytesRead) {
-		String username = new String(bytesRead).trim();
+	public void getAllFiles(byte[] dataIn) {
+		String username = new String(dataIn).trim();
 		
 		if (userToFiles.containsKey(username)) {
 			List<String> files = userToFiles.get(username);
 			System.out.println(files);
 			byte[] data = new byte[2048];
 			int pos = 0;
-			System.out.println("WAY before flushing turdwords");
 			for (String file : files) {
 				if (pos > 0) {
 					data[pos++] = 9;
@@ -47,20 +46,18 @@ public class UAClientConnection implements Runnable {
 					data[pos++] = fileNameBytes[i];
 				}
 			}
-			System.out.println("before flushing turdwords");
 			try {
 				OutputStream out = socket.getOutputStream();
 				out.write(data);
 				out.flush();
-				System.out.println("flush turdwords");
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
 	}
 	
-	public void retrieveFile(byte[] bytesRead) {
-		String[] tokens = new String(bytesRead).trim().split("\t");
+	public void retrieveFile(byte[] dataIn) {
+		String[] tokens = new String(dataIn).trim().split("\t");
 		
 		if (userToFiles.containsKey(tokens[0]) && fileToUser.containsKey(tokens[1]) && fileToDataNode.containsKey(tokens[1])) {
 			try {
@@ -105,43 +102,57 @@ public class UAClientConnection implements Runnable {
 		}
 	}
 	
-	public void deleteFile(byte[] bytesRead) {
-		String[] tokens = new String(bytesRead).trim().split("\t");
+	public void deleteFile(byte[] dataIn) {
+		String[] tokens = new String(dataIn).trim().split("\t");
+		System.out.println("User: " + tokens[0]);
+		System.out.println("File: " + tokens[1]);
 		
 		if (userToFiles.containsKey(tokens[0]) && fileToUser.containsKey(tokens[1]) && fileToDataNode.containsKey(tokens[1])) {
 			try {
 				Socket dataNode = new Socket(dataNodeMap.get(fileToDataNode.get(tokens[1])), 32000);
 				InputStream dataNodeIn = dataNode.getInputStream();
 				OutputStream dataNodeOut = dataNode.getOutputStream();
-				
+
+				byte[] header = new byte[50];
 				byte[] dataSent = new byte[500];
 				byte[] request = DELETE_FILE.getBytes();
 				byte[] username = tokens[0].getBytes();
 				byte[] filename = tokens[1].getBytes();
 				
 				for (int i = 0; i < request.length; i++) {
-					dataSent[i] = request[i];
+					header[i] = request[i];
 				}
 				
 				for (int i = 0; i < username.length; i++) {
-					dataSent[i + 50] = username[i];
+					dataSent[i] = username[i];
 				}
 				
-				dataSent[50 + username.length] = 9;
+				dataSent[username.length] = 9;
 				
 				for (int i = 0; i < filename.length; i++) {
-					dataSent[i + 50 + username.length + 1] = filename[i];
+					dataSent[i + username.length + 1] = filename[i];
 				}
-				
+
+				dataNodeOut.write(header, 0, header.length);
+				dataNodeOut.flush();
+				System.out.println("Sent Header");
 				dataNodeOut.write(dataSent, 0, dataSent.length);
 				dataNodeOut.flush();
+				System.out.println("Sent Data");
 				
 				byte[] dataReceived = new byte[500];
 				
 				int bytesReceived = dataNodeIn.read(dataReceived, 0, dataReceived.length);
+				String result = new String(dataReceived).trim();
+
+				if (result.equals("SUCCESS")) {
+					fileToUser.remove(tokens[1]);
+					fileToDataNode.remove(tokens[1]);
+					userToFiles.get(tokens[0]).remove(tokens[1]);
+				}
 				
 				OutputStream out = socket.getOutputStream();
-				out.write(dataReceived, 0, bytesReceived);
+				out.write(dataReceived, 0, dataReceived.length);
 				out.flush();
 				
 				dataNode.close();
@@ -231,17 +242,17 @@ public class UAClientConnection implements Runnable {
 					break;
 				case RETRIEVE_FILE:
                     System.out.println("case 2");
-					in.read(dataIn, 50, dataIn.length);
+					in.read(dataIn, 0, dataIn.length);
 					retrieveFile(dataIn);
 					break;
 				case DELETE_FILE:
                     System.out.println("case 3");
-					in.read(dataIn, 50, dataIn.length);
+					in.read(dataIn, 0, dataIn.length);
 					deleteFile(dataIn);
 					break;
 				case UPLOAD_FILE:
                     System.out.println("case 4");
-					in.read(dataIn, 50, 450);
+					in.read(dataIn, 0, 450);
 					uploadFile(dataIn, in);
 					break;
                 default:
