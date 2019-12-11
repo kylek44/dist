@@ -29,7 +29,8 @@ public class UAMaster {
 	private BufferedReader usermapIn;
 	private BufferedWriter filemapOut;
 	private BufferedWriter usermapOut;
-	private ConcurrentHashMap<String, String> dataNodeMap = new ConcurrentHashMap<>();
+	private ConcurrentHashMap<String, String> dataNodeIPs = new ConcurrentHashMap<>();
+	private ConcurrentHashMap<String, Integer> dataNodePorts = new ConcurrentHashMap<>();
 	private ConcurrentHashMap<Integer, String> serverNumbers = new ConcurrentHashMap<>();
 	private ConcurrentHashMap<String, String> fileToDataNode = new ConcurrentHashMap<>();
 	private ConcurrentHashMap<String, String> fileToUser = new ConcurrentHashMap<>();
@@ -48,7 +49,8 @@ public class UAMaster {
 			
 			while ((line = configIn.readLine()) != null) {
 				tokens = line.split(" ");
-				dataNodeMap.put(tokens[0], tokens[1]);
+				dataNodeIPs.put(tokens[0], tokens[1]);
+				dataNodePorts.put(tokens[0], Integer.parseInt(tokens[2]));
 				serverNumbers.put(dataNodes, tokens[0]);
 				dataNodes++;
 			}
@@ -107,7 +109,7 @@ public class UAMaster {
 					Socket socket = server.accept();
 					System.out.println(socket.getInetAddress());
 					UAClientCounter.add();
-					new UAClientConnection(socket, dataNodeMap, serverNumbers, fileToDataNode, fileToUser, userToFiles).run();
+					new UAClientConnection(socket, dataNodeIPs, dataNodePorts, serverNumbers, fileToDataNode, fileToUser, userToFiles).run();
 				} catch(Exception e) {
 					continue;
 				}

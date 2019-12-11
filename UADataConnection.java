@@ -1,7 +1,4 @@
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
 
 public class UADataConnection implements Runnable {
@@ -16,17 +13,20 @@ public class UADataConnection implements Runnable {
         try {
             in.read(dataIn, 0, dataIn.length);
             String[] tokens = new String(dataIn).trim().split("\t");
-            File file = new File(tokens[1]);
-            OutputStream out = socket.getOutputStream();
+            File dir = new File(tokens[0]);
+            boolean s = false;
             byte[] dataOut = new byte[50];
             byte[] success = "SUCCESS".getBytes();
             byte[] failure = "FAILURE".getBytes();
-            boolean s = false;
+            OutputStream out = socket.getOutputStream();
 
-            if (file.exists()) {
-                s = file.delete();
+            if (dir.isDirectory()) {
+                File file = new File(tokens[0] + "/" + tokens[1]);
+
+                if (file.exists()) {
+                    s = file.delete();
+                }
             }
-
             if (s) {
                 for (int i = 0; i < success.length; i++) {
                     dataOut[i] = success[i];
@@ -39,8 +39,63 @@ public class UADataConnection implements Runnable {
 
             out.write(dataOut, 0, dataOut.length);
             out.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-            out.close();
+    private void uploadFile(InputStream in) {
+        try {
+            byte[] secondHeader = new byte[500];
+            in.read(secondHeader, 0, secondHeader.length);
+            String[] tokens = new String(secondHeader).trim().split("\t");
+            File dir = new File(tokens[0]);
+
+            if (!dir.exists() || !dir.isDirectory()) {
+                dir.mkdirs();
+            }
+
+            OutputStream fileOut = new FileOutputStream(new File(tokens[0] + "/" + tokens[1]));
+            int bytesRead = -1;
+            byte[] dataIn = new byte[1024 * 10];
+
+            while ((bytesRead = in.read(dataIn)) != -1) {
+                fileOut.write(dataIn, 0, bytesRead);
+            }
+
+            fileOut.flush();
+            fileOut.close();
+
+            OutputStream out = socket.getOutputStream();
+            byte[] result = new byte[50];
+            byte[] success = "SUCCESS".getBytes();
+
+            for (int i = 0; i < success.length; i++) {
+                result[i] = success[i];
+            }
+
+            out.write(result, 0, result.length);
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void retrieveFile(InputStream in) {
+        try {
+            byte[] secondHeader = new byte[500];
+            in.read(secondHeader, 0, secondHeader.length);
+            String[] tokens = new String(secondHeader).trim().split("\t");
+            File file = new File(tokens[0] + "/" + tokens[1]);
+            InputStream fileIn = new FileInputStream(file);
+            OutputStream out = socket.getOutputStream();
+            byte[] buffer = new byte[1024 * 10];
+
+            while (fileIn.read(buffer) > -1) {
+                out.write(buffer);
+            }
+
+            in.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -56,8 +111,19 @@ public class UADataConnection implements Runnable {
             in.read(header, 0, header.length);
             String request = new String(header).trim();
 
-            if (request.equals("DELETE_FILE")) {
-                deleteFile(in);
+            switch (request) {
+                case "DELETE_FILE":
+                    deleteFile(in);
+                    break;
+                case "UPLOAD_FILE":
+                    uploadFile(in);
+                    break;
+                case "RETRIEVE_FILE":
+                    retrieveFile(in);
+                    break;
+                default:
+                    System.out.println("Hit default");
+                    break;
             }
 
             in.close();

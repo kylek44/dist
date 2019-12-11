@@ -14,15 +14,17 @@ public class UAClientConnection implements Runnable {
 	private static final String UPLOAD_FILE = "UPLOAD_FILE";
 	private static final String DELETE_FILE = "DELETE_FILE";
 	private final Socket socket;
-	private ConcurrentHashMap<String, String> dataNodeMap;
+	private ConcurrentHashMap<String, String> dataNodeIPs;
+	private ConcurrentHashMap<String, Integer> dataNodePorts;
 	private ConcurrentHashMap<Integer, String> serverNumbers;
 	private ConcurrentHashMap<String, String> fileToDataNode;
 	private ConcurrentHashMap<String, String> fileToUser;
 	private ConcurrentHashMap<String, List<String>> userToFiles;
 	
-	public UAClientConnection(Socket socket, ConcurrentHashMap<String, String> dataNodeMap, ConcurrentHashMap<Integer, String> serverNumbers, ConcurrentHashMap<String, String> fileToDataNode, ConcurrentHashMap<String, String> fileToUser, ConcurrentHashMap<String, List<String>> userToFiles) {
+	public UAClientConnection(Socket socket, ConcurrentHashMap<String, String> dataNodeIPs, ConcurrentHashMap<String, Integer> dataNodePorts, ConcurrentHashMap<Integer, String> serverNumbers, ConcurrentHashMap<String, String> fileToDataNode, ConcurrentHashMap<String, String> fileToUser, ConcurrentHashMap<String, List<String>> userToFiles) {
 		this.socket = socket;
-		this.dataNodeMap = dataNodeMap;
+		this.dataNodeIPs = dataNodeIPs;
+		this.dataNodePorts = dataNodePorts;
 		this.serverNumbers = serverNumbers;
 		this.fileToDataNode = fileToDataNode;
 		this.fileToUser = fileToUser;
@@ -61,7 +63,7 @@ public class UAClientConnection implements Runnable {
 		
 		if (userToFiles.containsKey(tokens[0]) && fileToUser.containsKey(tokens[1]) && fileToDataNode.containsKey(tokens[1])) {
 			try {
-				Socket dataNode = new Socket(dataNodeMap.get(fileToDataNode.get(tokens[1])), 32000);
+				Socket dataNode = new Socket(dataNodeIPs.get(fileToDataNode.get(tokens[1])), 32000);
 				InputStream dataNodeIn = dataNode.getInputStream();
 				OutputStream dataNodeOut = dataNode.getOutputStream();
 				
@@ -109,7 +111,10 @@ public class UAClientConnection implements Runnable {
 		
 		if (userToFiles.containsKey(tokens[0]) && fileToUser.containsKey(tokens[1]) && fileToDataNode.containsKey(tokens[1])) {
 			try {
-				Socket dataNode = new Socket(dataNodeMap.get(fileToDataNode.get(tokens[1])), 32000);
+				String ip = dataNodeIPs.get(fileToDataNode.get(tokens[1]));
+				int port = dataNodePorts.get(fileToDataNode.get(tokens[1]));
+				System.out.println("Connecting to IP: " + ip + " on PORT: " + port);
+				Socket dataNode = new Socket(ip, port);
 				InputStream dataNodeIn = dataNode.getInputStream();
 				OutputStream dataNodeOut = dataNode.getOutputStream();
 
@@ -166,13 +171,14 @@ public class UAClientConnection implements Runnable {
 		String[] tokens = new String(dataIn).trim().split("\t");
 		
 		if (userToFiles.contains(tokens[0])) {
-			int hash = tokens[1].hashCode() % dataNodeMap.size();
+			int hash = tokens[1].hashCode() % dataNodeIPs.size();
 			try {
-				Socket dataNode = new Socket(dataNodeMap.get(serverNumbers.get(hash)), 32000);
+				Socket dataNode = new Socket(dataNodeIPs.get(serverNumbers.get(hash)), 32000);
 				InputStream dataNodeIn = dataNode.getInputStream();
 				OutputStream dataNodeOut = dataNode.getOutputStream();
 				
-				byte[] header = new byte[500];
+				byte[] header = new byte[50];
+				byte[] secondHeader = new byte[500];
 				byte[] request = UPLOAD_FILE.getBytes();
 				byte[] username = tokens[0].getBytes();
 				byte[] filename = tokens[1].getBytes();
@@ -182,17 +188,21 @@ public class UAClientConnection implements Runnable {
 				}
 				
 				for (int i = 0; i < username.length; i++) {
-					header[i + 50] = username[i];
+					secondHeader[i] = username[i];
 				}
 				
-				header[50 + username.length] = 9;
+				header[username.length] = 9;
 				
 				for (int i = 0; i < filename.length; i++) {
-					header[i + 50 + username.length + 1] = filename[i];
+					secondHeader[i + username.length + 1] = filename[i];
 				}
 				
 				dataNodeOut.write(header, 0, header.length);
 				dataNodeOut.flush();
+				System.out.println("Sent header");
+				dataNodeOut.write(secondHeader, 0, secondHeader.length);
+				dataNodeOut.flush();
+				System.out.println("Sent second header");
 				
 				int bytesRead = -1;
 				byte[] data = new byte[1024 * 10];
@@ -211,9 +221,6 @@ public class UAClientConnection implements Runnable {
 				out.flush();
 				
 				dataNode.close();
-			} catch (UnknownHostException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
