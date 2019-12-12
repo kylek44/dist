@@ -171,7 +171,7 @@ public class UAClientConnection implements Runnable {
 		String[] tokens = new String(dataIn).trim().split("\t");
 
 		
-		if (userToFiles.contains(tokens[0])) {
+		if (userToFiles.containsKey(tokens[0])) {
 			int hash = tokens[1].hashCode() % dataNodeIPs.size();
 			try {
 				Socket dataNode = new Socket(dataNodeIPs.get(serverNumbers.get(hash)), 32000);
@@ -234,7 +234,7 @@ public class UAClientConnection implements Runnable {
 		try {
             System.out.println("start");
 			InputStream in = socket.getInputStream();
-			byte[] dataIn = new byte[4096];
+			byte[] dataIn = new byte[500];
 			byte[] header = new byte[50];
 			in.read(header, 0, header.length);
 			String type = new String(header).trim();
