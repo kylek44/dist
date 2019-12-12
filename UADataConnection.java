@@ -69,7 +69,8 @@ public class UADataConnection implements Runnable {
                 System.out.println(bytesRead);
                 System.out.println(new String(dataIn));
                 System.out.println("HELP");
-//                fileOut.write(dataIn);
+                fileOut.write(dataIn, 0, bytesRead);
+                System.out.println("Wrote stuff");
 //                fileOut.flush();
             }
 

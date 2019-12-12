@@ -218,8 +218,9 @@ public class UAClientConnection implements Runnable {
 				while (in.read(data) != -1) {
 					dataNodeOut.write(data);
 				}
-				System.out.println("Wrote file");
+
 				dataNodeOut.flush();
+				System.out.println("Wrote file");
 
 				userToFiles.get(tokens[0]).add(tokens[1]);
 				fileToUser.put(tokens[1], tokens[0]);
