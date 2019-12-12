@@ -96,6 +96,7 @@ public class UADataConnection implements Runnable {
     }
 
     private void retrieveFile(InputStream in) {
+        System.out.println("retrieveFile method");
         try {
             byte[] secondHeader = new byte[500];
             in.read(secondHeader, 0, secondHeader.length);
@@ -108,6 +109,10 @@ public class UADataConnection implements Runnable {
             while (fileIn.read(buffer) > -1) {
                 out.write(buffer);
             }
+
+            out.flush();
+
+            System.out.println("Done sending file");
 
             in.close();
         } catch (IOException e) {
@@ -142,6 +147,8 @@ public class UADataConnection implements Runnable {
             }
 
             in.close();
+
+            System.out.println("Finished");
         } catch(Exception e) {
             e.printStackTrace();
         }

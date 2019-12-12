@@ -63,31 +63,36 @@ public class UAClientConnection implements Runnable {
 		
 		if (userToFiles.containsKey(tokens[0]) && fileToUser.containsKey(tokens[1]) && fileToDataNode.containsKey(tokens[1])) {
 			try {
-				Socket dataNode = new Socket(dataNodeIPs.get(fileToDataNode.get(tokens[1])), 32000);
+				Socket dataNode = new Socket(dataNodeIPs.get(fileToDataNode.get(tokens[1])), dataNodePorts.get(fileToDataNode.get(tokens[1])));
 				InputStream dataNodeIn = dataNode.getInputStream();
 				OutputStream dataNodeOut = dataNode.getOutputStream();
-				
+
+				byte[] header = new byte[50];
 				byte[] dataSent = new byte[500];
 				byte[] request = RETRIEVE_FILE.getBytes();
 				byte[] username = tokens[0].getBytes();
 				byte[] filename = tokens[1].getBytes();
 				
 				for (int i = 0; i < request.length; i++) {
-					dataSent[i] = request[i];
+					header[i] = request[i];
 				}
 				
 				for (int i = 0; i < username.length; i++) {
-					dataSent[i + 50] = username[i];
+					dataSent[i] = username[i];
 				}
 				
-				dataSent[50 + username.length] = 9;
+				dataSent[username.length] = 9;
 				
 				for (int i = 0; i < filename.length; i++) {
-					dataSent[i + 50 + username.length + 1] = filename[i];
+					dataSent[i + username.length + 1] = filename[i];
 				}
-				
+
+				dataNodeOut.write(header, 0, header.length);
+				dataNodeOut.flush();
 				dataNodeOut.write(dataSent, 0, dataSent.length);
 				dataNodeOut.flush();
+
+				System.out.println("Wrote headers");
 				
 				byte[] dataReceived = new byte[1024 * 10];
 				
@@ -98,6 +103,8 @@ public class UAClientConnection implements Runnable {
 				out.flush();
 				
 				dataNode.close();
+
+				System.out.println("finished");
 			} catch(Exception e) {
 				e.printStackTrace();
 			}
