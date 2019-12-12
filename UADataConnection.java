@@ -62,10 +62,12 @@ public class UADataConnection implements Runnable {
             int bytesRead = -1;
             byte[] dataIn = new byte[1024 * 10];
 
-            while ((bytesRead = in.read(dataIn)) != -1) {
-                fileOut.write(dataIn, 0, bytesRead);
+            while (in.read(dataIn) != -1) {
+                fileOut.write(dataIn);
+                fileOut.flush();
             }
 
+            System.out.println("Wrote file");
             fileOut.flush();
             fileOut.close();
 
@@ -115,6 +117,7 @@ public class UADataConnection implements Runnable {
             InputStream in = socket.getInputStream();
             in.read(header, 0, header.length);
             String request = new String(header).trim();
+            System.out.println(request);
 
             switch (request) {
                 case "DELETE_FILE":

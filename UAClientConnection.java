@@ -175,7 +175,7 @@ public class UAClientConnection implements Runnable {
 			System.out.println("User exists");
 			int hash = Math.abs(tokens[1].hashCode() % dataNodeIPs.size());
 			try {
-				Socket dataNode = new Socket(dataNodeIPs.get(serverNumbers.get(hash)), 32000);
+				Socket dataNode = new Socket(dataNodeIPs.get(serverNumbers.get(hash)), dataNodePorts.get(serverNumbers.get(hash)));
 				System.out.println("connected");
 				InputStream dataNodeIn = dataNode.getInputStream();
 				OutputStream dataNodeOut = dataNode.getOutputStream();
@@ -187,6 +187,7 @@ public class UAClientConnection implements Runnable {
 				byte[] filename = tokens[1].getBytes();
 
 				System.out.println("Writing header");
+				System.out.println(new String(request));
 
 				for (int i = 0; i < request.length; i++) {
 					header[i] = request[i];
@@ -198,7 +199,7 @@ public class UAClientConnection implements Runnable {
 					secondHeader[i] = username[i];
 				}
 				
-				header[username.length] = 9;
+				secondHeader[username.length] = 9;
 				
 				for (int i = 0; i < filename.length; i++) {
 					secondHeader[i + username.length + 1] = filename[i];
@@ -214,18 +215,25 @@ public class UAClientConnection implements Runnable {
 				int bytesRead = -1;
 				byte[] data = new byte[1024 * 10];
 				
-				while ((bytesRead = in.read(data)) != -1) {
-					dataNodeOut.write(data, 0, bytesRead);
+				while (in.read(data) != -1) {
+					dataNodeOut.write(data);
+					dataNodeOut.flush();
 				}
-				
+				System.out.println("Wrote file");
 				dataNodeOut.flush();
-				
+
+				userToFiles.get(tokens[0]).add(tokens[1]);
+				fileToUser.put(tokens[1], tokens[0]);
+				fileToDataNode.put(tokens[1], serverNumbers.get(hash));
+
 				byte[] dataNodeDataIn = new byte[500];
 				dataNodeIn.read(dataNodeDataIn, 0, dataNodeDataIn.length);
 				
 				OutputStream out = socket.getOutputStream();
 				out.write(dataNodeDataIn, 0, dataNodeDataIn.length);
 				out.flush();
+
+				System.out.println("Wrote back to master");
 				
 				dataNode.close();
 			} catch (IOException e) {
