@@ -169,7 +169,7 @@ public class UAClientConnection implements Runnable {
 	
 	public void uploadFile(byte[] dataIn, InputStream in) {
 		String[] tokens = new String(dataIn).trim().split("\t");
-
+		System.out.println(tokens[0] + " " + tokens[1]);
 		
 		if (userToFiles.containsKey(tokens[0])) {
 			int hash = tokens[1].hashCode() % dataNodeIPs.size();
