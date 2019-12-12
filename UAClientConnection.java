@@ -169,6 +169,7 @@ public class UAClientConnection implements Runnable {
 	
 	public void uploadFile(byte[] dataIn, InputStream in) {
 		String[] tokens = new String(dataIn).trim().split("\t");
+
 		
 		if (userToFiles.contains(tokens[0])) {
 			int hash = tokens[1].hashCode() % dataNodeIPs.size();
@@ -259,7 +260,7 @@ public class UAClientConnection implements Runnable {
 					break;
 				case UPLOAD_FILE:
                     System.out.println("case 4");
-					in.read(dataIn, 0, 450);
+					in.read(dataIn, 0, dataIn.length);
 					uploadFile(dataIn, in);
 					break;
                 default:

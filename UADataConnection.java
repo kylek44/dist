@@ -26,15 +26,18 @@ public class UADataConnection implements Runnable {
                 if (file.exists()) {
                     s = file.delete();
                 }
+                System.out.println("File " + file.getName() + " deleted.");
             }
             if (s) {
                 for (int i = 0; i < success.length; i++) {
                     dataOut[i] = success[i];
                 }
+                System.out.println("Worked");
             } else {
                 for (int i = 0; i < failure.length; i++) {
                     dataOut[i] = failure[i];
                 }
+                System.out.println("Failed");
             }
 
             out.write(dataOut, 0, dataOut.length);
@@ -65,6 +68,8 @@ public class UADataConnection implements Runnable {
 
             fileOut.flush();
             fileOut.close();
+
+            System.out.println("Wrote to " + tokens[0] + "/" + tokens[1]);
 
             OutputStream out = socket.getOutputStream();
             byte[] result = new byte[50];
