@@ -3,7 +3,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class UADataNode {
-    private static final int PORT = 32001;
+    private static final int PORT = 32000;
     private ServerSocket server;
 
     public UADataNode() {
