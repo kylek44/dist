@@ -1,9 +1,9 @@
 file1.txt datanode1
 file2.txt datanode1
-file3.txt datanode1
-file4.txt datanode1
+file3.txt datanode2
+file4.txt datanode2
 file5.txt datanode1
-file6.txt datanode1
+file6.txt datanode2
 file7.txt datanode1
-file8.txt datanode1
+file8.txt datanode2
 file9.txt datanode1
