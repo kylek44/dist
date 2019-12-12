@@ -227,15 +227,15 @@ public class UAClientConnection implements Runnable {
 				fileToUser.put(tokens[1], tokens[0]);
 				fileToDataNode.put(tokens[1], serverNumbers.get(hash));
 
-				byte[] dataNodeDataIn = new byte[500];
-				dataNodeIn.read(dataNodeDataIn, 0, dataNodeDataIn.length);
-
-				OutputStream out = socket.getOutputStream();
-				out.write(dataNodeDataIn, 0, dataNodeDataIn.length);
-				out.flush();
-
-				System.out.println("Wrote back to master");
-				
+//				byte[] dataNodeDataIn = new byte[500];
+//				dataNodeIn.read(dataNodeDataIn, 0, dataNodeDataIn.length);
+//
+//				OutputStream out = socket.getOutputStream();
+//				out.write(dataNodeDataIn, 0, dataNodeDataIn.length);
+//				out.flush();
+//
+//				System.out.println("Wrote back to master");
+				System.out.println("Done uploading");
 				dataNode.close();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block

@@ -80,16 +80,16 @@ public class UADataConnection implements Runnable {
 
             System.out.println("Wrote to " + tokens[0] + "/" + tokens[1]);
 
-            OutputStream out = socket.getOutputStream();
-            byte[] result = new byte[50];
-            byte[] success = "SUCCESS".getBytes();
-
-            for (int i = 0; i < success.length; i++) {
-                result[i] = success[i];
-            }
-
-            out.write(result, 0, result.length);
-            out.flush();
+//            OutputStream out = socket.getOutputStream();
+//            byte[] result = new byte[50];
+//            byte[] success = "SUCCESS".getBytes();
+//
+//            for (int i = 0; i < success.length; i++) {
+//                result[i] = success[i];
+//            }
+//
+//            out.write(result, 0, result.length);
+//            out.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
