@@ -48,6 +48,7 @@ public class UADataConnection implements Runnable {
     }
 
     private void uploadFile(InputStream in) {
+        System.out.println("uploadFile method");
         try {
             byte[] secondHeader = new byte[500];
             in.read(secondHeader, 0, secondHeader.length);
@@ -62,9 +63,14 @@ public class UADataConnection implements Runnable {
             int bytesRead = -1;
             byte[] dataIn = new byte[1024 * 10];
 
-            while (in.read(dataIn) != -1) {
-                fileOut.write(dataIn);
-                fileOut.flush();
+            System.out.println("getting data");
+
+            while ((bytesRead = in.read(dataIn)) != -1) {
+                System.out.println(bytesRead);
+                System.out.println(new String(dataIn));
+                System.out.println("HELP");
+//                fileOut.write(dataIn);
+//                fileOut.flush();
             }
 
             System.out.println("Wrote file");

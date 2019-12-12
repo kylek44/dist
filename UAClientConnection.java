@@ -217,7 +217,6 @@ public class UAClientConnection implements Runnable {
 				
 				while (in.read(data) != -1) {
 					dataNodeOut.write(data);
-					dataNodeOut.flush();
 				}
 				System.out.println("Wrote file");
 				dataNodeOut.flush();
