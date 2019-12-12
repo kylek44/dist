@@ -172,9 +172,11 @@ public class UAClientConnection implements Runnable {
 		System.out.println(tokens[0] + " " + tokens[1]);
 		
 		if (userToFiles.containsKey(tokens[0])) {
-			int hash = tokens[1].hashCode() % dataNodeIPs.size();
+			System.out.println("User exists");
+			int hash = Math.abs(tokens[1].hashCode() % dataNodeIPs.size());
 			try {
 				Socket dataNode = new Socket(dataNodeIPs.get(serverNumbers.get(hash)), 32000);
+				System.out.println("connected");
 				InputStream dataNodeIn = dataNode.getInputStream();
 				OutputStream dataNodeOut = dataNode.getOutputStream();
 				
@@ -183,10 +185,14 @@ public class UAClientConnection implements Runnable {
 				byte[] request = UPLOAD_FILE.getBytes();
 				byte[] username = tokens[0].getBytes();
 				byte[] filename = tokens[1].getBytes();
-				
+
+				System.out.println("Writing header");
+
 				for (int i = 0; i < request.length; i++) {
 					header[i] = request[i];
 				}
+
+				System.out.println("Done writing header");
 				
 				for (int i = 0; i < username.length; i++) {
 					secondHeader[i] = username[i];
@@ -226,6 +232,8 @@ public class UAClientConnection implements Runnable {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+		} else {
+			System.out.println("User doesn't exist");
 		}
 	}
 
