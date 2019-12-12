@@ -126,7 +126,7 @@ public class UAMaster {
 					new UAClientConnection(socket, dataNodeIPs, dataNodePorts, serverNumbers, fileToDataNode, fileToUser, userToFiles).run();
 					UADebug.print("Connections: " + UAClientCounter.getCount());
 				} catch(Exception e) {
-					e.printStackTrace();
+//					e.printStackTrace();
 				}
 			}
 		}
@@ -177,6 +177,7 @@ public class UAMaster {
 	
 	public static void main(String[] args) {
 		System.out.println("Run UAInterrupter to stop server");
+		UAClientCounter counter = new UAClientCounter();
 		UAMaster master = new UAMaster();
 		master.init();
 		master.start();

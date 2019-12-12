@@ -1,11 +1,10 @@
 
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class UAClientConnection implements Runnable {
@@ -258,6 +257,34 @@ public class UAClientConnection implements Runnable {
 		}
 	}
 
+	private void writeFilemap() {
+		try {
+			BufferedWriter out = new BufferedWriter(new FileWriter("filemap.txt"));
+			for (Map.Entry<String, String> entry : fileToDataNode.entrySet()) {
+				out.write(entry.getKey() + " " + entry.getValue());
+				out.newLine();
+			}
+			out.close();
+			UADebug.print("filemap.txt updated");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void writeUsermap() {
+		try {
+			BufferedWriter out = new BufferedWriter(new FileWriter("usermap.txt"));
+			for (Map.Entry<String, String> entry : fileToUser.entrySet()) {
+				out.write(entry.getValue() + " " + entry.getKey());
+				out.newLine();
+			}
+			out.close();
+			UADebug.print("usermap.txt updated");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	@Override
 	public void run() {
 		try {
@@ -281,16 +308,20 @@ public class UAClientConnection implements Runnable {
 				case DELETE_FILE:
 					in.read(dataIn, 0, dataIn.length);
 					deleteFile(dataIn);
+					writeFilemap();
+					writeUsermap();
 					break;
 				case UPLOAD_FILE:
 					in.read(dataIn, 0, dataIn.length);
 					uploadFile(dataIn, in);
+					writeFilemap();
+					writeUsermap();
 					break;
                 default:
                 	UADebug.print("Unknown request: " + type);
                     break;
 			}
-			
+
 			socket.close();
 			UAClientCounter.remove();
 		} catch (IOException e) {
