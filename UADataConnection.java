@@ -108,6 +108,7 @@ public class UADataConnection implements Runnable {
 
             while (fileIn.read(buffer) > -1) {
                 out.write(buffer);
+                System.out.println(new String(buffer));
             }
 
             out.flush();

@@ -15,13 +15,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 public class UAMaster {
-	
+
 	private static final int TIMEOUT = 2000;
 	private static final int PORT = 32000;
 	private static final int MAX_CONNECTIONS = 20;
 	private static final String CONFIG_PATH = "config.txt";
 	private static final String FILE_MAP_PATH = "filemap.txt";
 	private static final String USER_MAP_PATH = "usermap.txt";
+	private static ServerSocket server;
 	
 	private int dataNodes;
 	private BufferedReader configIn;
@@ -35,10 +36,10 @@ public class UAMaster {
 	private ConcurrentHashMap<String, String> fileToDataNode = new ConcurrentHashMap<>();
 	private ConcurrentHashMap<String, String> fileToUser = new ConcurrentHashMap<>();
 	private ConcurrentHashMap<String, List<String>> userToFiles = new ConcurrentHashMap<>();
-	private ServerSocket server;
 	
 	public void init() {
 		try {
+			UADebug.print("Starting Server\nPort: " + PORT);
 			server = new ServerSocket(PORT);
 			server.setSoTimeout(TIMEOUT);
 			configIn = new BufferedReader(new FileReader(CONFIG_PATH));
@@ -46,22 +47,31 @@ public class UAMaster {
 			usermapIn = new BufferedReader(new FileReader(USER_MAP_PATH));
 			String line;
 			String[] tokens;
-			
+
+			UADebug.print("Reading config.txt...");
 			while ((line = configIn.readLine()) != null) {
-				tokens = line.split(" ");
+				tokens = line.split("\\s+");
 				dataNodeIPs.put(tokens[0], tokens[1]);
 				dataNodePorts.put(tokens[0], Integer.parseInt(tokens[2]));
 				serverNumbers.put(dataNodes, tokens[0]);
 				dataNodes++;
 			}
-			
-			while ((line = filemapIn.readLine()) != null) {
-				tokens = line.split(" ");
-				fileToDataNode.put(tokens[0], tokens[1]);
+			UADebug.print("Data Nodes: " + dataNodes);
+
+			for (int i = 0; i < dataNodes; i++) {
+				UADebug.print(i + ": " + serverNumbers.get(i) + "\t" + dataNodeIPs.get(serverNumbers.get(i)) + "\t" + dataNodePorts.get(serverNumbers.get(i)));
 			}
-			
+
+			UADebug.print("Reading filemap.txt...");
+			while ((line = filemapIn.readLine()) != null) {
+				tokens = line.split("\\s+");
+				fileToDataNode.put(tokens[0], tokens[1]);
+				UADebug.print(tokens[0] + " " + tokens[1]);
+			}
+
+			UADebug.print("Reading usermap.txt...");
 			while ((line = usermapIn.readLine()) != null) {
-				tokens = line.split(" ");
+				tokens = line.split("\\s+");
 				if (!userToFiles.containsKey(tokens[0])) {
                     userToFiles.put(tokens[0], new ArrayList<>());
 				}
@@ -72,6 +82,10 @@ public class UAMaster {
 // 					userToFiles.get(tokens[0]).add(tokens[1]);
 // 					fileToUser.put(tokens[1], tokens[0]);
 // 				}
+			}
+
+			for (String user : userToFiles.keySet()) {
+				UADebug.print(user + " " + userToFiles.get(user));
 			}
 		} catch(IOException e) {
 			e.printStackTrace();
@@ -107,11 +121,12 @@ public class UAMaster {
 			if (UAClientCounter.getCount() < MAX_CONNECTIONS) {
 				try {
 					Socket socket = server.accept();
-					System.out.println(socket.getInetAddress());
+					UADebug.print(socket.getInetAddress().toString());
 					UAClientCounter.add();
 					new UAClientConnection(socket, dataNodeIPs, dataNodePorts, serverNumbers, fileToDataNode, fileToUser, userToFiles).run();
+					UADebug.print("Connections: " + UAClientCounter.getCount());
 				} catch(Exception e) {
-					continue;
+					e.printStackTrace();
 				}
 			}
 		}
@@ -119,16 +134,22 @@ public class UAMaster {
 	
 	public void shutdown() {
 		try {
+			UADebug.print("Writing changes...");
 			filemapOut = new BufferedWriter(new FileWriter(FILE_MAP_PATH));
 			usermapOut = new BufferedWriter(new FileWriter(USER_MAP_PATH));
 			
 			for (Entry<String, String> entry : fileToDataNode.entrySet()) {
-				filemapOut.write(entry.getKey() + "\t" + entry.getValue());
+				filemapOut.write(entry.getKey() + " " + entry.getValue());
+				filemapOut.newLine();
 			}
+			UADebug.print("filemap.txt updated");
 			
 			for (Entry<String, String> entry : fileToUser.entrySet()) {
-				filemapOut.write(entry.getKey() + "\t" + entry.getValue());
+				usermapOut.write(entry.getValue() + " " + entry.getKey());
+				usermapOut.newLine();
 			}
+			UADebug.print("usermap.txt updated");
+			UADebug.print("Shutting down server");
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
@@ -149,11 +170,17 @@ public class UAMaster {
 			}
 		}
 	}
+
+	public static ServerSocket getServer() {
+		return server;
+	}
 	
 	public static void main(String[] args) {
+		System.out.println("Run UAInterrupter to stop server");
 		UAMaster master = new UAMaster();
 		master.init();
 		master.start();
+		master.shutdown();
 	}
 
 }

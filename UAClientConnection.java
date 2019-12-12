@@ -33,10 +33,11 @@ public class UAClientConnection implements Runnable {
 	
 	public void getAllFiles(byte[] dataIn) {
 		String username = new String(dataIn).trim();
+		UADebug.print("Getting all files for User: " + username);
 		
 		if (userToFiles.containsKey(username)) {
 			List<String> files = userToFiles.get(username);
-			System.out.println(files);
+			UADebug.print("Files: " + files);
 			byte[] data = new byte[2048];
 			int pos = 0;
 			for (String file : files) {
@@ -52,6 +53,7 @@ public class UAClientConnection implements Runnable {
 				OutputStream out = socket.getOutputStream();
 				out.write(data);
 				out.flush();
+				UADebug.print("File names sent");
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -60,9 +62,11 @@ public class UAClientConnection implements Runnable {
 	
 	public void retrieveFile(byte[] dataIn) {
 		String[] tokens = new String(dataIn).trim().split("\t");
+		UADebug.print("Retrieving File: " + tokens[1] + " for User: " + tokens[0] + "...");
 		
 		if (userToFiles.containsKey(tokens[0]) && fileToUser.containsKey(tokens[1]) && fileToDataNode.containsKey(tokens[1])) {
 			try {
+				UADebug.print("Connecting to Data Node: " + fileToDataNode.get(tokens[1]));
 				Socket dataNode = new Socket(dataNodeIPs.get(fileToDataNode.get(tokens[1])), dataNodePorts.get(fileToDataNode.get(tokens[1])));
 				InputStream dataNodeIn = dataNode.getInputStream();
 				OutputStream dataNodeOut = dataNode.getOutputStream();
@@ -92,10 +96,11 @@ public class UAClientConnection implements Runnable {
 				dataNodeOut.write(dataSent, 0, dataSent.length);
 				dataNodeOut.flush();
 
-				System.out.println("Wrote headers");
-				
+				UADebug.print("Sent headers");
+
 				byte[] dataReceived = new byte[1024 * 10];
-				
+
+				UADebug.print("Retrieving file");
 				int bytesReceived = dataNodeIn.read(dataReceived, 0, dataReceived.length);
 				
 				OutputStream out = socket.getOutputStream();
@@ -104,7 +109,7 @@ public class UAClientConnection implements Runnable {
 				
 				dataNode.close();
 
-				System.out.println("finished");
+				UADebug.print("File sent");
 			} catch(Exception e) {
 				e.printStackTrace();
 			}
@@ -113,14 +118,13 @@ public class UAClientConnection implements Runnable {
 	
 	public void deleteFile(byte[] dataIn) {
 		String[] tokens = new String(dataIn).trim().split("\t");
-		System.out.println("User: " + tokens[0]);
-		System.out.println("File: " + tokens[1]);
-		
+		UADebug.print("Deleting File: " + tokens[1] + " for User: " + tokens[0] + "...");
+
 		if (userToFiles.containsKey(tokens[0]) && fileToUser.containsKey(tokens[1]) && fileToDataNode.containsKey(tokens[1])) {
 			try {
 				String ip = dataNodeIPs.get(fileToDataNode.get(tokens[1]));
 				int port = dataNodePorts.get(fileToDataNode.get(tokens[1]));
-				System.out.println("Connecting to IP: " + ip + " on PORT: " + port);
+				UADebug.print("Connecting to Data Node: " + fileToDataNode.get(tokens[1]));
 				Socket dataNode = new Socket(ip, port);
 				InputStream dataNodeIn = dataNode.getInputStream();
 				OutputStream dataNodeOut = dataNode.getOutputStream();
@@ -147,27 +151,33 @@ public class UAClientConnection implements Runnable {
 
 				dataNodeOut.write(header, 0, header.length);
 				dataNodeOut.flush();
-				System.out.println("Sent Header");
 				dataNodeOut.write(dataSent, 0, dataSent.length);
 				dataNodeOut.flush();
-				System.out.println("Sent Data");
+
+				UADebug.print("Sent headers");
 				
 				byte[] dataReceived = new byte[500];
 				
 				int bytesReceived = dataNodeIn.read(dataReceived, 0, dataReceived.length);
 				String result = new String(dataReceived).trim();
 
+				UADebug.print("Result: " + result);
+
 				if (result.equals("SUCCESS")) {
 					fileToUser.remove(tokens[1]);
 					fileToDataNode.remove(tokens[1]);
 					userToFiles.get(tokens[0]).remove(tokens[1]);
 				}
-				
+
+				UADebug.print("Sending result");
+
 				OutputStream out = socket.getOutputStream();
 				out.write(dataReceived, 0, dataReceived.length);
 				out.flush();
 				
 				dataNode.close();
+
+				UADebug.print("Result sent");
 			} catch(Exception e) {
 				e.printStackTrace();
 			}
@@ -176,14 +186,14 @@ public class UAClientConnection implements Runnable {
 	
 	public void uploadFile(byte[] dataIn, InputStream in) {
 		String[] tokens = new String(dataIn).trim().split("\t");
+		UADebug.print("Uploading File: " + tokens[1] + " for User: " + tokens[0] + "...");
 		System.out.println(tokens[0] + " " + tokens[1]);
 		
 		if (userToFiles.containsKey(tokens[0])) {
-			System.out.println("User exists");
-			int hash = Math.abs(tokens[1].hashCode() % dataNodeIPs.size());
+			int hash = tokens[1].hashCode() % dataNodeIPs.size();
 			try {
+				UADebug.print("Connecting to Data Node: " + serverNumbers.get(hash));
 				Socket dataNode = new Socket(dataNodeIPs.get(serverNumbers.get(hash)), dataNodePorts.get(serverNumbers.get(hash)));
-				System.out.println("connected");
 				InputStream dataNodeIn = dataNode.getInputStream();
 				OutputStream dataNodeOut = dataNode.getOutputStream();
 				
@@ -193,15 +203,10 @@ public class UAClientConnection implements Runnable {
 				byte[] username = tokens[0].getBytes();
 				byte[] filename = tokens[1].getBytes();
 
-				System.out.println("Writing header");
-				System.out.println(new String(request));
-
 				for (int i = 0; i < request.length; i++) {
 					header[i] = request[i];
 				}
 
-				System.out.println("Done writing header");
-				
 				for (int i = 0; i < username.length; i++) {
 					secondHeader[i] = username[i];
 				}
@@ -214,11 +219,10 @@ public class UAClientConnection implements Runnable {
 				
 				dataNodeOut.write(header, 0, header.length);
 				dataNodeOut.flush();
-				System.out.println("Sent header");
 				dataNodeOut.write(secondHeader, 0, secondHeader.length);
 				dataNodeOut.flush();
-				System.out.println("Sent second header");
-				
+				UADebug.print("Sent headers");
+
 				int bytesRead = -1;
 				byte[] data = new byte[1024 * 10];
 				
@@ -227,8 +231,9 @@ public class UAClientConnection implements Runnable {
 				}
 
 				dataNodeOut.flush();
-				System.out.println("Wrote file");
 				dataNodeOut.close();
+
+				UADebug.print("Sent file");
 
 				userToFiles.get(tokens[0]).add(tokens[1]);
 				fileToUser.put(tokens[1], tokens[0]);
@@ -242,8 +247,8 @@ public class UAClientConnection implements Runnable {
 //				out.flush();
 //
 //				System.out.println("Wrote back to master");
-				System.out.println("Done uploading");
 				dataNode.close();
+				UADebug.print("Done uploading");
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -256,42 +261,38 @@ public class UAClientConnection implements Runnable {
 	@Override
 	public void run() {
 		try {
-            System.out.println("start");
 			InputStream in = socket.getInputStream();
 			byte[] dataIn = new byte[500];
 			byte[] header = new byte[50];
 			in.read(header, 0, header.length);
 			String type = new String(header).trim();
 			
-			System.out.println("before switch");
 			switch (type) {
 				case GET_ALL_FILES:
-                    System.out.println("case 1");
 					//in.read(dataIn, 50, dataIn.length);
 					in.read(dataIn, 0, dataIn.length);
 					System.out.println(new String(dataIn).trim());
 					getAllFiles(dataIn);
 					break;
 				case RETRIEVE_FILE:
-                    System.out.println("case 2");
 					in.read(dataIn, 0, dataIn.length);
 					retrieveFile(dataIn);
 					break;
 				case DELETE_FILE:
-                    System.out.println("case 3");
 					in.read(dataIn, 0, dataIn.length);
 					deleteFile(dataIn);
 					break;
 				case UPLOAD_FILE:
-                    System.out.println("case 4");
 					in.read(dataIn, 0, dataIn.length);
 					uploadFile(dataIn, in);
 					break;
                 default:
-                    System.out.println("05hyt default case");
+                	UADebug.print("Unknown request: " + type);
+                    break;
 			}
 			
 			socket.close();
+			UAClientCounter.remove();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
